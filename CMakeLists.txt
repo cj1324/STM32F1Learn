@@ -18,6 +18,7 @@ SET(CMAKE_BUILD_TYPE DEBUG)
 SET(CMAKE_C_COMPILER "arm-none-eabi-gcc")
 SET(CMAKE_LINKER "arm-none-eabi-ld")
 SET(CMAKE_OBJCOPY "arm-none-eabi-objcopy")
+SET(CMAKE_SIZE "arm-none-eabi-size")
 
 SET(LINK_SCRIPT ${CMAKE_SOURCE_DIR}/Boot/STM32F103XB_FLASH.ld)
 SET(FAMILY "STM32F103xB")
@@ -29,8 +30,7 @@ SET(STARTUP ${STARTUP}
     ${HAL_LIB_SRC}/stm32f1xx_hal_rcc.c
     ${HAL_LIB_SRC}/stm32f1xx_hal_gpio.c
     ${HAL_LIB_SRC}/stm32f1xx_hal_dma.c
-    ${HAL_LIB_SRC}/stm32f1xx_hal_i2c.c
-    ${HAL_LIB_SRC}/stm32f1xx_hal_usart.c
+    ${HAL_LIB_SRC}/stm32f1xx_hal_uart.c
 )
 SET_PROPERTY(SOURCE Boot/startup_stm32f103xb.s PROPERTY LANGUAGE C)
 SET(SRC main.c stm32f1xx_it.c stm32f1xx_hal_msp.c)
@@ -38,8 +38,8 @@ SET(SRC main.c stm32f1xx_it.c stm32f1xx_hal_msp.c)
 SET(DEBUG_FLAGS "-O0 -g")
 
 SET(MCU_FLAGS "-march=armv7-m -mcpu=cortex-m3 -mthumb")
-SET(CMAKE_C_FLAGS "${MCU_FLAGS} -fno-common -ffreestanding -Wall ${DEBUG_FLAGS}")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -nostdlib")
+SET(CMAKE_C_FLAGS "${MCU_FLAGS} -fno-common -ffreestanding -fno-builtin -Wall --std=c99  ${DEBUG_FLAGS}")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -nostdlib")
 ADD_DEFINITIONS(-D${FAMILY} -DUSE_HAL_DRIVER)
 SET(CMAKE_EXE_LINKER_FLAGS "${DEBUG_FLAGS} -nostartfiles -T${LINK_SCRIPT}")
 SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
@@ -51,10 +51,11 @@ set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
 ADD_EXECUTABLE(${PROJECT_NAME}.elf ${SRC} ${STARTUP})
 
-add_custom_command(DEPENDS ${PROJECT_NAME}.elf OUTPUT ${PROJECT_NAME}.hex COMMAND ${CMAKE_OBJCOPY} -Oihex ${PROJECT_NAME}.elf ${PROJECT_NAME}.hex)
-add_custom_command(DEPENDS ${PROJECT_NAME}.elf OUTPUT ${PROJECT_NAME}.bin COMMAND ${CMAKE_OBJCOPY} -Obinary ${PROJECT_NAME}.elf ${PROJECT_NAME}.bin)
+ADD_CUSTOM_COMMAND(DEPENDS ${PROJECT_NAME}.elf OUTPUT ${PROJECT_NAME}.hex COMMAND ${CMAKE_OBJCOPY} -Oihex ${PROJECT_NAME}.elf ${PROJECT_NAME}.hex)
+ADD_CUSTOM_COMMAND(DEPENDS ${PROJECT_NAME}.elf OUTPUT ${PROJECT_NAME}.bin COMMAND ${CMAKE_OBJCOPY} -Obinary ${PROJECT_NAME}.elf ${PROJECT_NAME}.bin)
+ADD_CUSTOM_COMMAND(TARGET ${PROJECT_NAME}.elf POST_BUILD COMMAND ${CMAKE_SIZE} ${PROJECT_NAME}.elf)
 
-add_custom_target(generate_bin ALL DEPENDS ${PROJECT_NAME}.bin)
-add_custom_target(generate_hex ALL DEPENDS ${PROJECT_NAME}.hex)
+ADD_CUSTOM_TARGET(generate_bin ALL DEPENDS ${PROJECT_NAME}.bin)
+ADD_CUSTOM_TARGET(generate_hex ALL DEPENDS ${PROJECT_NAME}.hex)
 
 add_custom_target(flash ${STLINK_BIN} --reset write ${PROJECT_NAME}.bin 0x8000000 depends ${PROJECT_NAME}.bin)

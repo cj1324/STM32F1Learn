@@ -18,9 +18,12 @@
 
 /* Private variables ---------------------------------------------------------*/
 static GPIO_InitTypeDef  GPIO_InitStruct;
+static UART_HandleTypeDef UartHandle;
 
 /* Private function prototypes -----------------------------------------------*/
-void SystemClock_Config(void);
+static void SystemClock_Config(void);
+static void Error_Handler(void);
+static void UART_Config(void);
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -31,22 +34,24 @@ void SystemClock_Config(void);
   */
 int main(void)
 {
- 
-	HAL_Init();
+    HAL_Init();
+    SystemClock_Config();
 
- 	SystemClock_Config();
-  
     __HAL_RCC_GPIOC_CLK_ENABLE();
+    GPIO_InitStruct.Pin = LED_GPIO_PIN;
+    GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull  = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
+    HAL_GPIO_Init(LED_GPIO_PORT, &GPIO_InitStruct);
 
-	GPIO_InitStruct.Pin = LED_GPIO_PIN;
-	GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
-	GPIO_InitStruct.Pull  = GPIO_NOPULL;
-	GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
-	HAL_GPIO_Init(LED_GPIO_PORT, &GPIO_InitStruct);
-	while (1) {
-		HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_GPIO_PIN);
-		HAL_Delay(500);
-	}
+    UART_Config();
+    char banner[5] = {'H', 'C', 0x0A, 0x0D, 0x00};
+    HAL_UART_Transmit(&UartHandle, (uint8_t *)&banner, 4, 0xFFFF);
+    while (1) {
+        HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_GPIO_PIN);
+        HAL_Delay(2000);
+    }
+    Error_Handler();
 }
 
 /**
@@ -61,7 +66,7 @@ void SystemClock_Config(void)
   __PWR_CLK_ENABLE();
 
   /* Configure PLL ------------------------------------------------------*/
-  /*  8 * 6 = 48 MHz */
+  /*  8/1 * 6 = 48 MHz */
   oscinitstruct.OscillatorType  = RCC_OSCILLATORTYPE_HSE;
   oscinitstruct.HSEState        = RCC_HSE_ON;
   oscinitstruct.LSEState        = RCC_LSE_OFF;
@@ -89,6 +94,35 @@ void SystemClock_Config(void)
     while(1); 
   }
 }
+
+static void UART_Config(void)
+{
+
+    UartHandle.Instance        = USART2;
+    UartHandle.Init.BaudRate   = 9600;
+    UartHandle.Init.WordLength = UART_WORDLENGTH_8B;
+    UartHandle.Init.StopBits   = UART_STOPBITS_1;
+    UartHandle.Init.Parity     = UART_PARITY_NONE;
+    UartHandle.Init.HwFlowCtl  = UART_HWCONTROL_NONE;
+    UartHandle.Init.Mode       = UART_MODE_TX;
+
+    if (HAL_UART_Init(&UartHandle) != HAL_OK)
+    {
+        /* Initialization Error */
+        Error_Handler();
+    }
+
+
+}
+
+
+static void Error_Handler(void){
+    while (1) {
+        HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_GPIO_PIN);
+        HAL_Delay(100);
+    }
+}
+
 
 #ifdef  USE_FULL_ASSERT
 
