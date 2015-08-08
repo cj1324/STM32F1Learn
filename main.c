@@ -11,10 +11,13 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
+#define PUTCHAR_PROTOTYPE void __io_putchar(void* p, char ch)
 /* Private macro -------------------------------------------------------------*/
 
 #define LED_GPIO_PORT GPIOC
 #define LED_GPIO_PIN GPIO_PIN_13
+
+PUTCHAR_PROTOTYPE;
 
 /* Private variables ---------------------------------------------------------*/
 static GPIO_InitTypeDef  GPIO_InitStruct;
@@ -45,14 +48,23 @@ int main(void)
     HAL_GPIO_Init(LED_GPIO_PORT, &GPIO_InitStruct);
 
     UART_Config();
+    init_printf(0, __io_putchar);
     char banner[5] = {'H', 'C', 0x0A, 0x0D, 0x00};
     HAL_UART_Transmit(&UartHandle, (uint8_t *)&banner, 4, 0xFFFF);
     while (1) {
         HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_GPIO_PIN);
         HAL_Delay(2000);
+        printf("Hello Word %d..\r\n", sizeof(banner));
     }
     Error_Handler();
 }
+
+
+PUTCHAR_PROTOTYPE
+{
+    HAL_UART_Transmit(&UartHandle, (uint8_t *)&ch, 1, 0xFFFF);
+}
+
 
 /**
   * @brief  System Clock Configuration
@@ -99,7 +111,7 @@ static void UART_Config(void)
 {
 
     UartHandle.Instance        = USART2;
-    UartHandle.Init.BaudRate   = 9600;
+    UartHandle.Init.BaudRate   = 115200;
     UartHandle.Init.WordLength = UART_WORDLENGTH_8B;
     UartHandle.Init.StopBits   = UART_STOPBITS_1;
     UartHandle.Init.Parity     = UART_PARITY_NONE;

@@ -9,6 +9,7 @@ INCLUDE_DIRECTORIES(
     ${STM32CubeF1_FW}/Drivers/CMSIS/Device/ST/STM32F1xx/Include/
     ${STM32CubeF1_FW}/Drivers/STM32F1xx_HAL_Driver/Inc/
     Inc
+    Lib
 )
 SET(HAL_LIB_SRC ${STM32CubeF1_FW}/Drivers/STM32F1xx_HAL_Driver/Src/)
 
@@ -23,7 +24,7 @@ SET(CMAKE_SIZE "arm-none-eabi-size")
 SET(LINK_SCRIPT ${CMAKE_SOURCE_DIR}/Boot/STM32F103XB_FLASH.ld)
 SET(FAMILY "STM32F103xB")
 
-SET(STARTUP Boot/startup_stm32f103xb.s Boot/system_stm32f1xx.c)
+SET(STARTUP Boot/startup_stm32f103xb.s Boot/system_stm32f1xx.c Lib/printf.c)
 SET(STARTUP ${STARTUP}
     ${HAL_LIB_SRC}/stm32f1xx_hal.c
     ${HAL_LIB_SRC}/stm32f1xx_hal_cortex.c
