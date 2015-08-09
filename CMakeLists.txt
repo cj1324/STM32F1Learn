@@ -29,8 +29,11 @@ SET(STARTUP ${STARTUP}
     ${HAL_LIB_SRC}/stm32f1xx_hal.c
     ${HAL_LIB_SRC}/stm32f1xx_hal_cortex.c
     ${HAL_LIB_SRC}/stm32f1xx_hal_rcc.c
+    ${HAL_LIB_SRC}/stm32f1xx_hal_rcc_ex.c
     ${HAL_LIB_SRC}/stm32f1xx_hal_gpio.c
     ${HAL_LIB_SRC}/stm32f1xx_hal_dma.c
+    ${HAL_LIB_SRC}/stm32f1xx_hal_adc.c
+    ${HAL_LIB_SRC}/stm32f1xx_hal_adc_ex.c
     ${HAL_LIB_SRC}/stm32f1xx_hal_uart.c
 )
 SET_PROPERTY(SOURCE Boot/startup_stm32f103xb.s PROPERTY LANGUAGE C)

@@ -52,6 +52,8 @@
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
+extern ADC_HandleTypeDef hadc1;
+extern DMA_HandleTypeDef hdma_adc1;
 
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
@@ -79,6 +81,7 @@ void HardFault_Handler(void)
   /* Go to infinite loop when Hard Fault exception occurs */
   while (1)
   {
+    printf("HF.");
   }
 }
 
@@ -92,6 +95,7 @@ void MemManage_Handler(void)
   /* Go to infinite loop when Memory Manage exception occurs */
   while (1)
   {
+    printf("MF.");
   }
 }
 
@@ -105,6 +109,7 @@ void BusFault_Handler(void)
   /* Go to infinite loop when Bus Fault exception occurs */
   while (1)
   {
+    printf("BF.");
   }
 }
 
@@ -118,6 +123,7 @@ void UsageFault_Handler(void)
   /* Go to infinite loop when Usage Fault exception occurs */
   while (1)
   {
+    printf("UF.");
   }
 }
 
@@ -157,6 +163,13 @@ void SysTick_Handler(void)
 {
   HAL_IncTick();
 }
+
+void DMA1_Channel1_IRQHandler(void)
+{
+  HAL_DMA_IRQHandler(hadc1.DMA_Handle);
+}
+
+
 
 /******************************************************************************/
 /*                 STM32F1xx Peripherals Interrupt Handlers                   */
