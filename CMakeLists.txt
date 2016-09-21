@@ -1,8 +1,16 @@
 PROJECT(stm32learn)
 cmake_minimum_required(VERSION 2.6)
-SET(STM32CubeF1_FW ${CMAKE_SOURCE_DIR}/../STM32Cube_FW_F1_V1.1.0)
+
+SET(STM32CubeF1_FW ${CMAKE_SOURCE_DIR}/../STM32Cube_FW_F1_V1.4.0)
 SET(STLINK_BIN ${CMAKE_SOURCE_DIR}/../stlink/st-flash)
 
+IF(NOT EXISTS "${STM32CubeF1_FW}")
+	MESSAGE( FATAL_ERROR "Not found STM32CubeF1 FW 1.4.0, please download from st.com." )
+ENDIF()
+
+IF(NOT EXISTS "${STLINK_BIN}")
+	MESSAGE( WARNING "Not found st-flash, disable flash command." )
+ENDIF()
 
 INCLUDE_DIRECTORIES(
     ${STM32CubeF1_FW}/Drivers/CMSIS/Include/
@@ -40,9 +48,9 @@ SET(DEBUG_FLAGS "-O0 -g")
 
 SET(MCU_FLAGS "-march=armv7-m -mcpu=cortex-m3 -mthumb")
 SET(CMAKE_C_FLAGS "${MCU_FLAGS} -fno-common -ffreestanding -fno-builtin -Wall --std=c99  ${DEBUG_FLAGS}")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -nostdlib")
+SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 ADD_DEFINITIONS(-D${FAMILY} -DUSE_HAL_DRIVER)
-SET(CMAKE_EXE_LINKER_FLAGS "${DEBUG_FLAGS} -nostartfiles -T${LINK_SCRIPT}")
+SET(CMAKE_EXE_LINKER_FLAGS "${DEBUG_FLAGS} -nostartfiles --specs=nano.specs -lc -T${LINK_SCRIPT}")
 SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
 
 CMAKE_POLICY(SET CMP0015 OLD)
