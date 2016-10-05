@@ -1,5 +1,5 @@
 PROJECT(stm32learn)
-cmake_minimum_required(VERSION 2.6)
+CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 SET(STM32CubeF1_FW ${CMAKE_SOURCE_DIR}/../STM32Cube_FW_F1_V1.4.0)
 SET(STLINK_BIN ${CMAKE_SOURCE_DIR}/../stlink/st-flash)
@@ -21,9 +21,10 @@ INCLUDE_DIRECTORIES(
 )
 SET(HAL_LIB_SRC ${STM32CubeF1_FW}/Drivers/STM32F1xx_HAL_Driver/Src/)
 
-SET(CMAKE_VERBOSE_MAKEFILE 0)
 SET(CMAKE_SYSTEM_NAME Linux)
 SET(CMAKE_BUILD_TYPE DEBUG)
+SET(CMAKE_C_FLAGS_DEBUG "-O0 -gdwarf-3 -g")
+SET(CMAKE_VERBOSE_MAKEFILE ON)
 SET(CMAKE_C_COMPILER "arm-none-eabi-gcc")
 SET(CMAKE_LINKER "arm-none-eabi-ld")
 SET(CMAKE_OBJCOPY "arm-none-eabi-objcopy")
@@ -44,13 +45,11 @@ SET(STARTUP ${STARTUP}
 SET_PROPERTY(SOURCE Boot/startup_stm32f103xb.s PROPERTY LANGUAGE C)
 SET(SRC main.c stm32f1xx_it.c stm32f1xx_hal_msp.c)
 
-SET(DEBUG_FLAGS "-O0 -g")
 
 SET(MCU_FLAGS "-march=armv7-m -mcpu=cortex-m3 -mthumb")
-SET(CMAKE_C_FLAGS "${MCU_FLAGS} -fno-common -ffreestanding -fno-builtin -Wall --std=c99  ${DEBUG_FLAGS}")
-SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+SET(CMAKE_C_FLAGS "${MCU_FLAGS} -fno-common -ffreestanding -fno-builtin -ffunction-sections -fdata-sections -Wall --std=c99")
 ADD_DEFINITIONS(-D${FAMILY} -DUSE_HAL_DRIVER)
-SET(CMAKE_EXE_LINKER_FLAGS "${DEBUG_FLAGS} -nostartfiles --specs=nano.specs -lc -T${LINK_SCRIPT}")
+SET(CMAKE_EXE_LINKER_FLAGS " -nostartfiles -T${LINK_SCRIPT}")
 SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
 
 CMAKE_POLICY(SET CMP0015 OLD)
@@ -67,4 +66,4 @@ ADD_CUSTOM_COMMAND(TARGET ${PROJECT_NAME}.elf POST_BUILD COMMAND ${CMAKE_SIZE} $
 ADD_CUSTOM_TARGET(generate_bin ALL DEPENDS ${PROJECT_NAME}.bin)
 ADD_CUSTOM_TARGET(generate_hex ALL DEPENDS ${PROJECT_NAME}.hex)
 
-add_custom_target(flash ${STLINK_BIN} --reset write ${PROJECT_NAME}.bin 0x8000000 depends ${PROJECT_NAME}.bin)
+ADD_CUSTOM_TARGET(flash ${STLINK_BIN} --reset write ${PROJECT_NAME}.bin 0x8000000 depends ${PROJECT_NAME}.bin)

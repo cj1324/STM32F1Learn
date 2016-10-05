@@ -14,8 +14,9 @@
 #define PUTCHAR_PROTOTYPE void __io_putchar(void* p, char ch)
 /* Private macro -------------------------------------------------------------*/
 
-#define LED_GPIO_PORT GPIOC
-#define LED_GPIO_PIN GPIO_PIN_13
+#define LED_GPIO_CLK_ENABLE __HAL_RCC_GPIOB_CLK_ENABLE
+#define LED_GPIO_PORT GPIOB
+#define LED_GPIO_PIN GPIO_PIN_12
 
 PUTCHAR_PROTOTYPE;
 
@@ -40,7 +41,7 @@ int main(void)
     HAL_Init();
     SystemClock_Config();
 
-    __HAL_RCC_GPIOC_CLK_ENABLE();
+    LED_GPIO_CLK_ENABLE();
     GPIO_InitStruct.Pin = LED_GPIO_PIN;
     GPIO_InitStruct.Mode  = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull  = GPIO_NOPULL;
@@ -49,11 +50,12 @@ int main(void)
 
     UART_Config();
     init_printf(0, __io_putchar);
+
     char banner[5] = {'H', 'C', 0x0A, 0x0D, 0x00};
     HAL_UART_Transmit(&UartHandle, (uint8_t *)&banner, 4, 0xFFFF);
     while (1) {
         HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_GPIO_PIN);
-        HAL_Delay(2000);
+        HAL_Delay(1000);
         printf("Hello Word %d..\r\n", sizeof(banner));
     }
     Error_Handler();
@@ -78,7 +80,7 @@ void SystemClock_Config(void)
   __PWR_CLK_ENABLE();
 
   /* Configure PLL ------------------------------------------------------*/
-  /*  8/1 * 6 = 48 MHz */
+  /*  8/1 * 9 = 72 MHz */
   oscinitstruct.OscillatorType  = RCC_OSCILLATORTYPE_HSE;
   oscinitstruct.HSEState        = RCC_HSE_ON;
   oscinitstruct.LSEState        = RCC_LSE_OFF;
@@ -86,7 +88,7 @@ void SystemClock_Config(void)
   oscinitstruct.HSEPredivValue    = RCC_HSE_PREDIV_DIV1;
   oscinitstruct.PLL.PLLState    = RCC_PLL_ON;
   oscinitstruct.PLL.PLLSource   = RCC_PLLSOURCE_HSE;
-  oscinitstruct.PLL.PLLMUL      = RCC_PLL_MUL6;
+  oscinitstruct.PLL.PLLMUL      = RCC_PLL_MUL9;
   if (HAL_RCC_OscConfig(&oscinitstruct)!= HAL_OK)
   {
     /* Initialization Error */
@@ -110,7 +112,7 @@ void SystemClock_Config(void)
 static void UART_Config(void)
 {
 
-    UartHandle.Instance        = USART2;
+    UartHandle.Instance        = USART1;
     UartHandle.Init.BaudRate   = 115200;
     UartHandle.Init.WordLength = UART_WORDLENGTH_8B;
     UartHandle.Init.StopBits   = UART_STOPBITS_1;
