@@ -12,14 +12,25 @@ IF(NOT EXISTS "${STLINK_BIN}")
 	MESSAGE( WARNING "Not found st-flash, disable flash command." )
 ENDIF()
 
+SET(CMSIS_DRIVER_DIR ${STM32CubeF1_FW}/Drivers/CMSIS)
+SET(HAL_DRIVERS_DIR ${STM32CubeF1_FW}/Drivers/STM32F1xx_HAL_Driver)
+SET(CMSIS_RTOS_DIR ${STM32CubeF1_FW}/Middlewares/Third_Party/FreeRTOS/Source)
+
 INCLUDE_DIRECTORIES(
-    ${STM32CubeF1_FW}/Drivers/CMSIS/Include/
-    ${STM32CubeF1_FW}/Drivers/CMSIS/Device/ST/STM32F1xx/Include/
-    ${STM32CubeF1_FW}/Drivers/STM32F1xx_HAL_Driver/Inc/
-    Inc
-    Lib
+    ${CMSIS_DRIVER_DIR}/Include/
+    ${CMSIS_DRIVER_DIR}/Device/ST/STM32F1xx/Include/
+
+    ${HAL_DRIVERS_DIR}/Inc/
+
+    ${CMSIS_RTOS_DIR}/include/
+    ${CMSIS_RTOS_DIR}/CMSIS_RTOS/
+    ${CMSIS_RTOS_DIR}/portable/GCC/ARM_CM3/
+
+    ${CMAKE_SOURCE_DIR}/Inc
+    ${CMAKE_SOURCE_DIR}/Lib
 )
-SET(HAL_LIB_SRC ${STM32CubeF1_FW}/Drivers/STM32F1xx_HAL_Driver/Src/)
+
+SET(HAL_LIB_SRC ${HAL_DRIVERS_DIR}/Src/)
 
 SET(CMAKE_SYSTEM_NAME Linux)
 SET(CMAKE_BUILD_TYPE DEBUG)
@@ -33,23 +44,41 @@ SET(CMAKE_SIZE "arm-none-eabi-size")
 SET(LINK_SCRIPT ${CMAKE_SOURCE_DIR}/Boot/STM32F103XB_FLASH.ld)
 SET(FAMILY "STM32F103xB")
 
-SET(STARTUP Boot/startup_stm32f103xb.s Boot/system_stm32f1xx.c Lib/printf.c)
+SET(STARTUP ${CMAKE_SOURCE_DIR}/Boot/startup_stm32f103xb.s
+            ${CMAKE_SOURCE_DIR}/Boot/system_stm32f1xx.c
+            ${CMAKE_SOURCE_DIR}/syscall.c)  # for printf
+
 SET(STARTUP ${STARTUP}
-    ${HAL_LIB_SRC}/stm32f1xx_hal.c
-    ${HAL_LIB_SRC}/stm32f1xx_hal_cortex.c
-    ${HAL_LIB_SRC}/stm32f1xx_hal_rcc.c
-    ${HAL_LIB_SRC}/stm32f1xx_hal_gpio.c
-    ${HAL_LIB_SRC}/stm32f1xx_hal_dma.c
-    ${HAL_LIB_SRC}/stm32f1xx_hal_uart.c
+            ${HAL_LIB_SRC}/stm32f1xx_hal.c
+            ${HAL_LIB_SRC}/stm32f1xx_hal_cortex.c
+            ${HAL_LIB_SRC}/stm32f1xx_hal_rcc.c
+            ${HAL_LIB_SRC}/stm32f1xx_hal_rcc_ex.c
+            ${HAL_LIB_SRC}/stm32f1xx_hal_gpio.c
+            ${HAL_LIB_SRC}/stm32f1xx_hal_dma.c
+            ${HAL_LIB_SRC}/stm32f1xx_hal_uart.c
 )
-SET_PROPERTY(SOURCE Boot/startup_stm32f103xb.s PROPERTY LANGUAGE C)
+
+
+# for RTOS
+SET(CMSIS_RTOS ${CMSIS_RTOS_DIR}/CMSIS_RTOS/cmsis_os.c
+    ${CMSIS_RTOS_DIR}/portable/MemMang/heap_1.c
+    ${CMSIS_RTOS_DIR}/portable/GCC/ARM_CM3/port.c
+    ${CMSIS_RTOS_DIR}/list.c
+    ${CMSIS_RTOS_DIR}/queue.c
+    ${CMSIS_RTOS_DIR}/tasks.c
+    ${CMSIS_RTOS_DIR}/timers.c
+    )
+
+
+SET_PROPERTY(SOURCE ${CMAKE_SOURCE_DIR}/Boot/startup_stm32f103xb.s PROPERTY LANGUAGE C)
+
 SET(SRC main.c stm32f1xx_it.c stm32f1xx_hal_msp.c)
 
 
 SET(MCU_FLAGS "-march=armv7-m -mcpu=cortex-m3 -mthumb")
-SET(CMAKE_C_FLAGS "${MCU_FLAGS} -fno-common -ffreestanding -fno-builtin -ffunction-sections -fdata-sections -Wall --std=c99")
+SET(CMAKE_C_FLAGS "${MCU_FLAGS} -fno-common -Wall  -ffunction-sections -fdata-sections --std=gnu99 ")
 ADD_DEFINITIONS(-D${FAMILY} -DUSE_HAL_DRIVER)
-SET(CMAKE_EXE_LINKER_FLAGS " -nostartfiles -T${LINK_SCRIPT}")
+SET(CMAKE_EXE_LINKER_FLAGS "--specs=nano.specs -lc -lnosys -static -Wl,-Map=stm32f1.map -nostartfiles -Wl,--gc-section -T${LINK_SCRIPT}")
 SET(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
 
 CMAKE_POLICY(SET CMP0015 OLD)
@@ -57,7 +86,7 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM BOTH)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
 
-ADD_EXECUTABLE(${PROJECT_NAME}.elf ${SRC} ${STARTUP})
+ADD_EXECUTABLE(${PROJECT_NAME}.elf ${SRC} ${STARTUP} ${CMSIS_RTOS})
 
 ADD_CUSTOM_COMMAND(DEPENDS ${PROJECT_NAME}.elf OUTPUT ${PROJECT_NAME}.hex COMMAND ${CMAKE_OBJCOPY} -Oihex ${PROJECT_NAME}.elf ${PROJECT_NAME}.hex)
 ADD_CUSTOM_COMMAND(DEPENDS ${PROJECT_NAME}.elf OUTPUT ${PROJECT_NAME}.bin COMMAND ${CMAKE_OBJCOPY} -Obinary ${PROJECT_NAME}.elf ${PROJECT_NAME}.bin)

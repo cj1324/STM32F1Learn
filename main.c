@@ -11,23 +11,25 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define PUTCHAR_PROTOTYPE void __io_putchar(void* p, char ch)
 /* Private macro -------------------------------------------------------------*/
 
 #define LED_GPIO_CLK_ENABLE __HAL_RCC_GPIOB_CLK_ENABLE
 #define LED_GPIO_PORT GPIOB
 #define LED_GPIO_PIN GPIO_PIN_12
 
-PUTCHAR_PROTOTYPE;
+#define LED_THREAD 0
+
 
 /* Private variables ---------------------------------------------------------*/
 static GPIO_InitTypeDef  GPIO_InitStruct;
 static UART_HandleTypeDef UartHandle;
+osThreadId LEDThreadHandle;
 
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
 static void Error_Handler(void);
 static void UART_Config(void);
+static void LED_Thread(void const *argument);
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -47,26 +49,50 @@ int main(void)
     GPIO_InitStruct.Pull  = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_LOW;
     HAL_GPIO_Init(LED_GPIO_PORT, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(LED_GPIO_PORT, LED_GPIO_PIN, 1);
 
     UART_Config();
-    init_printf(0, __io_putchar);
 
-    char banner[5] = {'H', 'C', 0x0A, 0x0D, 0x00};
-    HAL_UART_Transmit(&UartHandle, (uint8_t *)&banner, 4, 0xFFFF);
-    while (1) {
-        HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_GPIO_PIN);
-        HAL_Delay(1000);
-        printf("Hello Word %d..\r\n", sizeof(banner));
-    }
+    osThreadDef(LED_THREAD, LED_Thread, osPriorityNormal, 0, configMINIMAL_STACK_SIZE);
+
+    HAL_GPIO_WritePin(LED_GPIO_PORT, LED_GPIO_PIN, 0);
+
+    LEDThreadHandle = osThreadCreate(osThread(LED_THREAD), NULL);
+
+    printf("osKernelStart.\r\n");
+    osKernelStart();
+
+    printf("osKernel broken.\r\n");
     Error_Handler();
 }
 
 
-PUTCHAR_PROTOTYPE
+static void LED_Thread(void const *argument)
 {
-    HAL_UART_Transmit(&UartHandle, (uint8_t *)&ch, 1, 0xFFFF);
+  uint32_t count = 0;
+  (void) argument;
+
+  for (;;)
+  {
+    count = osKernelSysTick() + 10000;
+
+    while (count >= osKernelSysTick())
+    {
+      HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_GPIO_PIN);
+      osDelay(1000);
+      HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_GPIO_PIN);
+      osDelay(1000);
+    }
+  }
 }
 
+int _write(int file, char *ptr, int len)
+{
+    int i;
+    file = file;
+    HAL_UART_Transmit(&UartHandle, ptr, len, 0xFFFF);
+    return len;
+}
 
 /**
   * @brief  System Clock Configuration
